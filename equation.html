@@ -1,0 +1,18 @@
+<html>
+<body>
+<div id="kuku">Equation</div>
+<script>
+function randomInt(x) {
+    return Math.floor(Math.random() * x) + 1;
+}
+function randomPM(x) {
+    return Math.random() > 0.5 ? "+" : "-";
+}
+factor1 = "(" + randomInt(10) + "x " + randomPM() + " " + randomInt(10) + ")";
+factor2 = "(" + randomInt(10) + "x " + randomPM() + " " + randomInt(10) + ")";
+document.getElementById("kuku").innerText = (randomInt(10) + "/" + factor1 + "\n" + randomPM() + "\n" + 
+                                             randomInt(10) + "/" + factor2 + "\n" + randomPM() + "\n" +
+                                             randomInt(10) + "/" + "(" + factor1 + factor2 + ")\n=\n" +
+                                             randomInt(10));
+</script>
+</body>
