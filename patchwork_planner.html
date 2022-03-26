@@ -1,0 +1,170 @@
+<html>
+<head>
+<style>
+body {
+    font-family: 'Courier New', monospace;
+    background: lightblue;
+}
+.patchgrid {
+	border-collapse: collapse;
+	margin: 80 auto;
+}
+.patchgridcell {
+	margin: 0 auto;
+    width: 40px; height: 40px;
+}
+</style>
+</head>
+<body>
+Avivit, I love you<br/>
+<br/>
+Tile count: <input type="text" id="count" onkeydown="handler()" onkeyup="handler()" onchange="handler()"><br/>
+Min width: <input type="text" id="minWidth" onkeydown="handler()" onkeyup="handler()" onchange="handler()"><br/>
+Min height: <input type="text" id="minHeight" onkeydown="handler()" onkeyup="handler()" onchange="handler()"><br/>
+Max width: <input type="text" id="maxWidth" onkeydown="handler()" onkeyup="handler()" onchange="handler()"><br/>
+Max height: <input type="text" id="maxHeight" onkeydown="handler()" onkeyup="handler()" onchange="handler()"><br/>
+Three colors: <input type="checkbox" id="3color" onclick="handler()"><br/>
+<div id="result">
+</div>
+
+<script>
+function handler() {
+	try {
+		handler_without_catch();
+	} catch(err) {
+		document.getElementById('result').textContent = "SOMETHING WENT VERY WRONG!!! (" + err + ")";
+	}
+}
+
+function handler_without_catch() {
+	var count = parseInt(document.getElementById('count').value);
+	var minWidth = parseInt(document.getElementById('minWidth').value);
+	var minHeight = parseInt(document.getElementById('minHeight').value);
+	var maxWidth = parseInt(document.getElementById('maxWidth').value);
+	var maxHeight = parseInt(document.getElementById('maxHeight').value);
+	if (!(count > 0)) return;
+
+	result = "";
+
+	for (var middleHalfCol = 0; middleHalfCol <= count / 2; ++middleHalfCol) {
+		for (var middleLine = 0; middleLine <= count; ++middleLine) {
+			quarterSize = count - middleLine - middleHalfCol * 2;
+			// result += "=== middleLine is " + middleLine + " middleHalfCol is " + middleHalfCol + " quarterSize is " + quarterSize + "===\r\n\r\n";
+			if (middleHalfCol && middleLine % 2 == 0 && middleLine > 0) continue;			
+			if (middleLine % 2 == 1 && !middleHalfCol && quarterSize > 0) continue;
+			if (quarterSize < 0) continue;
+			if (quarterSize > 0 && quarterSize % 4 != 0) continue;
+			quarterSize /= 4;
+			
+			// result += " --- starting ---\r\n\r\n";
+			quarters = makeQuarters(quarterSize, middleHalfCol, Math.floor(minWidth / 2 - 2));
+			if (middleLine && !quarterSize)
+				quarters.push([]);
+			else if (middleHalfCol && !quarterSize)
+				quarters.push([]);
+			fulls = []
+			
+			// result += "--- quarters length is " + quarters.length + "---\r\n\r\n";
+			for (var i = 0; i < quarters.length; ++i) {
+				// result += "--- quarters are " + quarters[i] + "---\r\n\r\n";
+				fulls.push([...quarters[i]]);
+				for (var j = fulls[i].length; j < middleHalfCol; ++j)
+					fulls[i].splice(0, 0, 0);
+
+				for (var j = fulls[i].length - 1; j >= 0; --j) {
+					fulls[i][j] *= 2;
+					if (middleHalfCol) ++fulls[i][j];
+					fulls[i].push(fulls[i][j]);
+				}
+				if (middleLine > 0)
+					fulls[i].splice(fulls[i].length / 2, 0, middleLine);
+				//result += "--- fulls is " + fulls[i] + "---\r\n\r\n";
+				
+				sum = 0;
+				for (var j = 0; j < fulls[i].length; ++j) sum += fulls[i][j];
+				if (sum != count) result += "!!!!!!!!!ERROR!!!!!!!!!!!\r\n\r\n";				
+			}
+			
+			for (var i = fulls.length - 1; i >= 0; --i) {
+				height = fulls[i].length;
+				if (height < minHeight || height > maxHeight) {
+					fulls.splice(i, 1);
+					continue;
+				}
+				for (var j = 0; j < height; ++j) {
+					var width = fulls[i][j];
+					if (width < minWidth || width > maxWidth) {
+						fulls.splice(i, 1);
+						break;
+					}
+				}
+			}
+			
+			result += printFulls(fulls, document.getElementById('3color').checked);
+			if (result.length > 1000000) throw 0;
+		}
+	}
+	document.getElementById('result').innerHTML = result;
+}
+
+function printFulls(fulls, is_three_color) {
+	var result = "";
+	maxLength = 0;
+	for (var i = 0; i < fulls.length; ++i) {
+		for (var j = 0; j < fulls[i].length; ++j) {
+			maxLength = maxLength > fulls[i][j] ? maxLength : fulls[i][j];
+		}
+	}
+	
+	color_counts = {};
+	for (var i = 0; i < fulls.length; ++i) {
+		result += "<table class=\"patchgrid\">\n";
+		for (var j = 0; j < fulls[i].length; ++j) {
+			result += "<tr>";
+			for (var k = 0; k < (maxLength - fulls[i][j]) / 2; ++k)
+				result += "<td class=\"patchgridcell\"></td>";
+			for (var k = 0; k < fulls[i][j]; ++k) {
+				var color = is_three_color 
+				              ? ((k + Math.floor((maxLength - fulls[i][j]) / 2)) % 2 == 0 
+							        ? (j % 2 == 0 ? "white" : "grey")
+									: (j % 2 == 0 ? "grey" : "black"))
+				              : ((j + Math.floor((maxLength - fulls[i][j]) / 2) + k) % 2 == 0 ? "white" : "black");
+				color_counts[color] = color in color_counts ? color_counts[color] + 1 : 1;
+				result += "<td class=\"patchgridcell\" style=\"background: " + color + "\"></td>";
+			}
+			for (var k = 0; k < (maxLength - fulls[i][j]) / 2; ++k)
+				result += "<td class=\"patchgridcell\"></td>";
+			result += "</tr>";
+		}
+		result += "</table>\n";
+		result += "<table><tr><th>Color</th><th>Count</th></tr>\n";
+		for (var key in color_counts) {
+			var value = color_counts[key];
+			result += "<tr><td>" + key + "</td><td>" + value + "</td></tr>\n";
+		}
+		result += "</table>\n";
+	}
+	return result;
+}
+
+function makeQuarters(count, lineLimit, minCountPerRow) {
+	if (count <= 0) { return []; }
+	if (count == 1) { return [[1]]; }
+	if (lineLimit == 1) { return [[count]]; }
+	
+	var quarters = [[count]];
+	for (var i = minCountPerRow && minCountPerRow > 1 ? minCountPerRow : 1; i < count; ++i) {
+		var quarters2 = makeQuarters(count - i, lineLimit - 1, minCountPerRow);
+		for (var j = 0; j < quarters2.length; ++j) {
+			var quarter = quarters2[j];
+			quarter.push(i);
+			if (quarter.length > 10000) throw 0;
+		}
+		quarters = quarters.concat(quarters2);
+	}
+	if (quarters.length > 10000) throw 0;
+	return quarters;
+}
+</script>
+</body>
+</html>

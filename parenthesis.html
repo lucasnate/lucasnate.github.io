@@ -1,0 +1,125 @@
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+</head>
+<body>
+
+Please write a number in the text box, the bigger the number, the harder the question. If you don't write a number, it will not work. 
+<br/>
+<input type="text" id="complexity" onkeydown="handler()" onkeyup="handler()" onchange="handler()"><br/>
+Question:
+<div id="the_div"></div>
+Solution:
+<div id="solution"></div>
+
+<div id="the_lisp_div"></div>
+
+<script>
+"use strict";
+
+// priority: +,- 1
+//           *,/ 2
+//           ^ 3
+//           - 4
+
+function opPriority(tree) {
+	if (tree.left == null)
+		return 5;
+	if (tree.right == null)
+		return 4;
+	return {'+': 1, '-': 1, '*': 2, '/': 2, '^': 3}[tree.op];
+}
+
+function calculateMinOpPriority(tree) {
+	if (tree.left) calculateMinOpPriority(tree.left);
+	if (tree.right) calculateMinOpPriority(tree.right);
+	tree.minOpPriority = opPriority(tree);
+	if (tree.right)
+		tree.minOpPriority = Math.min(tree.minOpPriority, tree.right.minOpPriority);
+	if (tree.left)
+		tree.minOpPriority = Math.min(tree.minOpPriority, tree.left.minOpPriority);
+}
+
+function display(tree) {
+	calculateMinOpPriority(tree);
+	if (!tree.left && !tree.right) 
+		return "" + tree.value;
+	if (tree.left && !tree.right) {
+		if (tree.left.minOpPriority < 4)
+			return "-(" + display(tree.left) + ")";
+		else
+			return "-" + display(tree.left);
+	}
+	var leftStr = display(tree.left);
+	var right_str = display(tree.right);
+	
+	if (!(opPriority(tree) <= tree.left.minOpPriority) || (tree.op == '^' && tree.left.minOpPriority < 5)) {
+		leftStr = "(" + leftStr + ")";
+	}
+	if (!(opPriority(tree) < tree.right.minOpPriority)) {
+		right_str = "(" + right_str + ")";
+	}
+	// TODO: associativity of operators
+	if (tree.op != '^') 
+		return leftStr + " " + tree.op + " " + right_str;
+	else
+		return leftStr + "²";
+}
+
+function displayLisp(tree) {
+	if (!tree.left && !tree.right) 
+		return "" + tree.value;
+	return "(" + (tree.op == '^' ? "expt" : tree.op) + " " + displayLisp(tree.left) + (tree.right ? " " + displayLisp(tree.right) : "") + ")";
+}
+
+function generateTree(remaining) {
+	if (remaining <= 0) {
+		return {left: null, right: null, value: Math.floor(Math.random() * 5) + 1};
+	}
+	var choice = Math.floor(Math.random() * 6);
+	var op;
+	if (choice == 0)
+		op = '+';
+	else if (choice == 1)
+		op = '-';
+	else if (choice == 2)
+		op = '*';
+	else if (choice == 3)
+		op = '/';
+	else if (choice == 4)
+		op = '^';
+	else if (choice == 5)
+		op = '-';
+	if (choice == 0 || choice == 1 || choice == 2 || choice == 3) {		
+		var leftRemaining = Math.floor(Math.random() * remaining);
+		return {left: generateTree(leftRemaining), right: generateTree(remaining - 1 - leftRemaining), op: op};
+	} else if (choice == 4) {
+		return {left: generateTree(remaining - 1), right: {left: null, right: null, value: 2}, op: op};
+	} else if (choice == 5) {
+		return {left: generateTree(remaining - 1), right: null, op: op};	
+	}
+}
+
+function handler() {
+	var tree = generateTree(document.getElementById("complexity").value);
+	//tree = {op: "-", left: {op: "*", left: {left: null, right: null, value: 5}
+	//                               , right: {left: null, right: null, value: 6}}
+	//		       , right: {left: null, right: null, value: 4}};
+	document.getElementById("the_div").textContent = display(tree);
+	document.getElementById("solution").textContent = evalTree(tree);
+	//document.getElementById("the_lisp_div").textContent = displayLisp(tree);
+}
+
+function evalTree(tree) {
+	if (tree.value) return tree.value;
+	if (tree.right == null) return -evalTree(tree.left);
+	if (tree.op == '+') return evalTree(tree.left) + evalTree(tree.right);
+	if (tree.op == '-') return evalTree(tree.left) - evalTree(tree.right);
+	if (tree.op == '*') return evalTree(tree.left) * evalTree(tree.right);
+	if (tree.op == '/') return evalTree(tree.left) / evalTree(tree.right);
+	if (tree.op == '^') return Math.pow(evalTree(tree.left), 2);
+}
+
+</script>
+</body>
+</html>
